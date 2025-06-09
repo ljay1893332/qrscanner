@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<link rel="icon" href="%sveltekit.assets%/favicon.png" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		%sveltekit.head%
+	</head>
+	<body data-sveltekit-preload-data="hover">
+		<script>
+		  import { onMount } from 'svelte';
+
+		  let scannedData = '';
+		  let errorMessage = '';
+		  let isScannerReady = false;
+
+		  onMount(async () => {
+		    const loadScript = (src) =>
+		      new Promise((resolve, reject) => {
+		        const script = document.createElement('script');
+		        script.src = src;
+		        script.onload = resolve;
+		        script.onerror = reject;
+		        document.head.appendChild(script);
+		      });
+
+		    try {
+		      await loadScript('https://unpkg.com/html5-qrcode');
+
+		      const scanner = new Html5Qrcode('reader');
+
+		      isScannerReady = true;
+
+		      await scanner.start(
+		        { facingMode: 'environment' },
+		        {
+		          fps: 10,
+		          qrbox: { width: 250, height: 250 },
+		        },
+		        (decodedText) => {
+		          scannedData = decodedText;
+		          console.log('✅ Scanned:', decodedText);
+		          scanner.stop();
+		        },
+		        (error) => {
+		          console.log('Scan error:', error);
+		        }
+		      );
+		    } catch (err) {
+		      console.error('❌ Error initializing scanner:', err);
+		      errorMessage = 'Camera access failed. Are you on localhost or HTTPS?';
+		    }
+		  });
+		</script>
+
+		<main>
+		  <h1>QR Code Scanner</h1>
+
+		  {#if errorMessage}
+		    <p style="color: red;">{errorMessage}</p>
+		  {/if}
+
+		  {#if !isScannerReady && !errorMessage}
+		    <p>Loading scanner...</p>
+		  {/if}
+
+		  <div id="reader" style="width: 300px; margin: auto;"></div>
+
+		  {#if scannedData}
+		    <p><strong>Scanned QR Data:</strong> {scannedData}</p>
+		  {/if}
+		</main>
+
+		<style>
+		  main {
+		    text-align: center;
+		    font-family: sans-serif;
+		    padding: 1rem;
+		  }
+		</style>
+	</body>
+</html>
